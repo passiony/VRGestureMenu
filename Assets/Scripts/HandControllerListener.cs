@@ -12,19 +12,39 @@ public class HandControllerListener : MonoBehaviour
 
     public Transform PokePoint;
     public UnityEvent<Vector3> OnPinched;
+    public UnityEvent<Vector3> OnUnPinched;
+    private bool selected = false;
+    private bool released = true;
 
-    private void OnEnable()
+    private void Update()
     {
-        m_SelectAction.action.performed += HandleSelectAction;
+        if (m_SelectAction.action.IsPressed())
+        {
+            Select();
+        }
+        else
+        {
+            Release();
+        }
     }
 
-    void OnDisable()
+    void Select()
     {
-        m_SelectAction.action.performed -= HandleSelectAction;
+        if (!selected)
+        {
+            selected = true;
+            released = false;
+            OnPinched?.Invoke(PokePoint.position);
+        }
     }
-
-    private void HandleSelectAction(InputAction.CallbackContext context)
+    
+    void Release()
     {
-        OnPinched?.Invoke(PokePoint.position);
+        if (!released)
+        {
+            released = true;
+            selected = false;
+            OnUnPinched?.Invoke(PokePoint.position);
+        }
     }
 }

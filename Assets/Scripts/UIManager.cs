@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.Text;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum EPanel
 {
@@ -12,7 +15,8 @@ public enum EPanel
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance;
-    public EPanel m_PanelType;
+    public TextMeshProUGUI m_PlayerTxt;
+    public TextMeshProUGUI m_LableTxt;
     public GameObject RadianPanel;
     public GameObject DigitalPanel;
     public float distance = 4;
@@ -20,12 +24,47 @@ public class UIManager : MonoBehaviour
     BaseView m_MainPanel;
     BaseView m_SubPanel;
 
+    private float startPinchTime;
+    private float endPinchTime;
+    private bool match1;
+    private bool match2;
+
     private void Awake()
     {
         Instance = this;
     }
 
-    public void HandleSelectAction(Vector3 fingerPosition)
+    private void OnEnable()
+    {
+        m_PlayerTxt.text = $"Player:{NumData.playerIndex + 1}   Mode:{NumData.PanelType}";
+        m_LableTxt.text = $"{NumData.CurrentNum[0]}-{NumData.CurrentNum[1]}";
+        StartCoroutine(DelayFade());
+        match1 = false;
+        match2 = false;
+    }
+
+    IEnumerator DelayFade()
+    {
+        m_LableTxt.alpha = 0;
+        yield return new WaitForSeconds(1.5f);
+        for (int i = 0; i < 10; i++)
+        {
+            yield return new WaitForSeconds(0.1f);
+            m_LableTxt.alpha += 0.1f;
+        }
+        yield return new WaitForSeconds(1f);
+        for (int i = 0; i < 10; i++)
+        {
+            yield return new WaitForSeconds(0.1f);
+            m_LableTxt.alpha -= 0.1f;
+        }
+    }
+
+    /// <summary>
+    /// 手指捏合，创建主面板
+    /// </summary>
+    /// <param name="fingerPosition"></param>
+    public void HandlePinchAction(Vector3 fingerPosition)
     {
         if (m_MainPanel == null)
         {
@@ -35,21 +74,64 @@ public class UIManager : MonoBehaviour
             transform.position = position;
             transform.forward = Vector3.Normalize(position - camera.position);
             m_MainPanel = CreatePanel(false);
-        }
-        else if (m_SubPanel == null)
-        {
-            m_MainPanel.Finish(true);
-            m_SubPanel = CreatePanel(true);
-        }
-        else
-        {
-            m_SubPanel.Finish(false);
+            m_MainPanel.SetNames(NumData.MainNames);
+            m_MainPanel.OnTrigger += OnMainTriggerEnter;
+            startPinchTime = Time.time;
         }
     }
 
-    public BaseView CreatePanel(bool subview)
+    public void OnMainTriggerEnter(int index)
     {
-        switch (m_PanelType)
+        string value = NumData.MainNames[index - 1];
+        //选择正确
+        if (value.ToLower() == NumData.CurrentNum[0].ToLower())
+        {
+            if (m_SubPanel == null)
+            {
+                m_MainPanel.Finish(true);
+                m_SubPanel = CreatePanel(true);
+                m_SubPanel.OnTrigger += OnSubTriggerEnter;
+                m_SubPanel.SetNames(NumData.SubNames[index - 1]);
+            }
+
+            match1 = false;
+        }
+        else
+        {
+            // 选择错误
+            match1 = false;
+        }
+    }
+
+    private void OnSubTriggerEnter(int index)
+    {
+        string value = m_SubPanel.Names[index - 1];
+        //选择正确
+        if (value.ToLower() == NumData.CurrentNum[1].ToLower())
+        {
+            match2 = true;
+        }
+        else
+        {
+            match2 = false;
+        }
+    }
+
+    public void HandleUnpinchAction(Vector3 fingerPosition)
+    {
+        if (m_SubPanel)
+        {
+            m_SubPanel.Finish(false);
+            NumData.NextData();
+            StartCoroutine(CoDelayRestart());
+        }
+
+        endPinchTime = Time.time;
+    }
+
+    BaseView CreatePanel(bool subview)
+    {
+        switch (NumData.PanelType)
         {
             case EPanel.Radian:
                 return CreateRadianView(subview);
@@ -111,7 +193,11 @@ public class UIManager : MonoBehaviour
         }
 
         sb.AppendLine(time);
-        sb.AppendLine(firstId + " - " + secondId);
+        sb.AppendLine($"Player:{NumData.playerIndex + 1} Mode:{NumData.PanelType}");
+        sb.AppendLine($"{NumData.CurrentNum[0]}-{NumData.CurrentNum[1]}");
+        sb.AppendLine($"匹配成功：{match1}-{match2}");
+        sb.AppendLine("duration:" + (endPinchTime - startPinchTime));
+
         if (FileUtility.SafeWriteAllText(path, sb.ToString()))
         {
             Debug.Log("保存成功");
@@ -135,9 +221,34 @@ public class UIManager : MonoBehaviour
     {
         Clear();
 
-        if (m_PanelType == EPanel.Radian)
-            m_PanelType = EPanel.Digital;
+        if (NumData.PanelType == EPanel.Radian)
+            NumData.PanelType = EPanel.Digital;
         else
-            m_PanelType = EPanel.Radian;
+            NumData.PanelType = EPanel.Radian;
+    }
+
+    public void ChangeMode(EPanel mode)
+    {
+        Clear();
+        NumData.PanelType = mode;
+    }
+
+    IEnumerator CoDelayRestart()
+    {
+        yield return new WaitForSeconds(2);
+        NumData.times++;
+        if (NumData.times >= 4)
+        {
+            NumData.times = 0;
+
+            UIManager.Instance.Save();
+            UIManager.Instance.Clear();
+            NumData.NextData();
+            SceneManager.LoadScene(0);
+        }
+        else
+        {
+            SceneManager.LoadScene(0);
+        }
     }
 }

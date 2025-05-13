@@ -11,15 +11,16 @@ public class HandGuestureListener : MonoBehaviour
     private static List<XRHandSubsystem> s_SubsystemsReuse = new List<XRHandSubsystem>();
     private XRFingerShape m_XRFingerShape;
     private bool isPinched;
-    public Transform indexTip;
-    
+    public Transform IndexTip;
+
     public UnityEvent<Vector3> OnPinched;
+    public UnityEvent<Vector3> OnUnpinch;
 
     private void Start()
     {
         m_XRFingerShape = new XRFingerShape();
     }
-    
+
     void Update()
     {
         var subsystem = TryGetSubsystem();
@@ -33,11 +34,12 @@ public class HandGuestureListener : MonoBehaviour
             if (!isPinched && pinch >= 0.99f)
             {
                 isPinched = true;
-                OnPinched?.Invoke(indexTip.position);
+                OnPinched?.Invoke(IndexTip.position);
             }
-            else if (pinch < 0.5f)
+            else if (isPinched && pinch < 0.5f)
             {
                 isPinched = false;
+                OnUnpinch?.Invoke(IndexTip.position);
             }
         }
     }

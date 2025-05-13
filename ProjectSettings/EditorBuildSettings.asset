@@ -9,6 +9,7 @@ EditorBuildSettings:
     path: Assets/Scenes/HandGestures.unity
     guid: 4c3abeefab3c8444fba9ec6b021857b8
   m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 50ac61d152277a94ca7e4c04579c32fa, type: 2}
     Unity.XR.PICO.LivePreview.Settings: {fileID: 11400000, guid: 1cf1788600ffb7345b849015345ed781, type: 2}
     Unity.XR.PXR.Settings: {fileID: 11400000, guid: deb149b5767f45c47a8b327d7c16f7a2, type: 2}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: b426e9fde8ba2e04aaa204f8cadd131e, type: 2}

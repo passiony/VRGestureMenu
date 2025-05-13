@@ -9,6 +9,7 @@ public class DigitalView : BaseView
 {
     public override void Start()
     {
+        base.Start();
         // 计算每个弧形的fillAmount
         float fillAmount = 1f / Num - Spacing;
         for (int i = 0; i < Num; i++)
@@ -18,13 +19,13 @@ public class DigitalView : BaseView
             newRadian.SetActive(true);
             var img = newRadian.GetComponent<Image>();
             // 设置旋转角度，使每个弧形均匀分布在圆环上，并调整初始角度以对齐手部位置
-            var angle = i * (360f / Num) + 203;
+            var angle = i * (360f / Num) + 225;
             img.transform.localRotation = Quaternion.Euler(0, 0, angle);
             // 设置fillAmount
             img.fillAmount = fillAmount;
             radianList.Add(img);
             var tmp = img.GetComponentInChildren<TextMeshProUGUI>();
-            tmp.text = (i + 1).ToString();
+            tmp.text = Names[i];
             tmp.transform.localEulerAngles = new Vector3(0, 0, -angle);
         }
     }
@@ -35,14 +36,25 @@ public class DigitalView : BaseView
         float segmentAngle = 360f / Num;
 
         // 计算手到眼睛的射线方向
-        Vector3 handToEyeDirection = (m_Hand.position - Eye.position).normalized;
+        Vector3 handToEyeDirection = (Hand.position - Eye.position).normalized;
         // 创建圆盘平面，法线为圆盘的forward方向
         Plane diskPlane = new Plane(-transform.forward, transform.position);
         // 计算手眼射线与圆盘平面的交点
         float enter;
-        if (diskPlane.Raycast(new Ray(m_Hand.position, handToEyeDirection), out enter))
+        if (diskPlane.Raycast(new Ray(Hand.position, handToEyeDirection), out enter))
         {
-            Vector3 intersectionPoint = m_Hand.position + handToEyeDirection * enter;
+            Vector3 intersectionPoint = Hand.position + handToEyeDirection * enter;
+            var direction = intersectionPoint - transform.position;
+            var distance = direction.magnitude;
+            if (distance < 0.5f)
+            {
+                foreach (var radian in radianList)
+                {
+                    radian.transform.localScale = Vector3.one;
+                }
+                return;
+            }
+            
             // 计算交点到圆盘中心的方向
             Vector3 centerToIntersection = (intersectionPoint - transform.position).normalized;
 
@@ -55,20 +67,22 @@ public class DigitalView : BaseView
             {
                 float startAngle = (i) * segmentAngle;
                 float endAngle = (i + 1) * segmentAngle;
-
+                var lable = radianList[i].GetComponentInChildren<TextMeshProUGUI>();
+                
                 // 判断射线是否在当前弧形的角度范围内
                 if (angle >= startAngle && angle < endAngle)
                 {
                     // 高亮当前弧形
-                    radianList[i].GetComponentInChildren<TextMeshProUGUI>().color = Color.yellow;
+                    lable.color = Color.yellow;
                     radianList[i].transform.localScale = SelectScale;
                     SelectImg = radianList[i].transform;
                     SelectIndex = i + 1;
+                    OnTrigger?.Invoke(SelectIndex);
                 }
                 else
                 {
                     // 恢复默认颜色
-                    radianList[i].GetComponentInChildren<TextMeshProUGUI>().color = Color.white;
+                    lable.color = Color.white;
                     radianList[i].transform.localScale = Vector3.one;
                 }
             }
