@@ -19,6 +19,7 @@ public class BaseView : MonoBehaviour
     protected bool isFinish;
     public Action<int> OnTrigger;
     public string[] Names { get; set; }
+    public Vector3 IntersectionPos { get; set; }
 
     public Transform Eye
     {
@@ -69,5 +70,10 @@ public class BaseView : MonoBehaviour
     public virtual void SetNames(string[] names)
     {
         this.Names = names;
+    }
+
+    public virtual Vector3 SelectPos()
+    {
+        return SelectImg.position;
     }
 }

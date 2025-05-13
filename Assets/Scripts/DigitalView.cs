@@ -45,21 +45,24 @@ public class DigitalView : BaseView
         {
             Vector3 intersectionPoint = Hand.position + handToEyeDirection * enter;
             var direction = intersectionPoint - transform.position;
-            var distance = direction.magnitude;
+            var distance = Mathf.Max(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
+            IntersectionPos = intersectionPoint;
             if (distance < 0.5f)
             {
                 foreach (var radian in radianList)
                 {
                     radian.transform.localScale = Vector3.one;
                 }
+
                 return;
             }
-            
+
             // 计算交点到圆盘中心的方向
             Vector3 centerToIntersection = (intersectionPoint - transform.position).normalized;
 
             // 计算交点到圆盘中心的方向与圆盘右方向（0度位置）之间的夹角
             float angle = Vector3.SignedAngle(transform.up, centerToIntersection, transform.forward);
+            angle += segmentAngle * 0.5f;
             if (angle < 0) angle += 360;
 
             // 计算每个弧形的角度范围
@@ -68,7 +71,7 @@ public class DigitalView : BaseView
                 float startAngle = (i) * segmentAngle;
                 float endAngle = (i + 1) * segmentAngle;
                 var lable = radianList[i].GetComponentInChildren<TextMeshProUGUI>();
-                
+
                 // 判断射线是否在当前弧形的角度范围内
                 if (angle >= startAngle && angle < endAngle)
                 {
@@ -96,8 +99,7 @@ public class DigitalView : BaseView
     public override void Finish(bool fade)
     {
         base.Finish(fade);
-        SelectImg.Find("Line").gameObject.SetActive(true);
-        
+        // SelectImg.Find("Line").gameObject.SetActive(true);
         if (fade)
         {
             var childs = GetComponentsInChildren<CanvasGroup>();
@@ -105,7 +107,13 @@ public class DigitalView : BaseView
             {
                 child.alpha = 0f;
             }
-            SelectImg.GetComponentInChildren<CanvasGroup>().alpha = 0.5f;
+
+            SelectImg.GetComponentInChildren<CanvasGroup>().alpha = 0.8f;
         }
+    }
+
+    public override Vector3 SelectPos()
+    {
+        return SelectImg.Find("Text").position;
     }
 }

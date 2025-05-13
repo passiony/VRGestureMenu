@@ -28,6 +28,9 @@ public class UIManager : MonoBehaviour
     private float endPinchTime;
     private bool match1;
     private bool match2;
+    private Vector3 startPosition;
+    private Vector3 endPosition;
+    public int state;
 
     private void Awake()
     {
@@ -41,6 +44,7 @@ public class UIManager : MonoBehaviour
         StartCoroutine(DelayFade());
         match1 = false;
         match2 = false;
+        state = 0;
     }
 
     IEnumerator DelayFade()
@@ -52,6 +56,7 @@ public class UIManager : MonoBehaviour
             yield return new WaitForSeconds(0.1f);
             m_LableTxt.alpha += 0.1f;
         }
+
         yield return new WaitForSeconds(1f);
         for (int i = 0; i < 10; i++)
         {
@@ -77,6 +82,9 @@ public class UIManager : MonoBehaviour
             m_MainPanel.SetNames(NumData.MainNames);
             m_MainPanel.OnTrigger += OnMainTriggerEnter;
             startPinchTime = Time.time;
+            startPosition = fingerPosition;
+            state = 1;
+            LineControll.Instance.SetPos(0, m_MainPanel.transform.position);
         }
     }
 
@@ -92,6 +100,8 @@ public class UIManager : MonoBehaviour
                 m_SubPanel = CreatePanel(true);
                 m_SubPanel.OnTrigger += OnSubTriggerEnter;
                 m_SubPanel.SetNames(NumData.SubNames[index - 1]);
+                state = 2;
+                LineControll.Instance.SetPos(1, m_SubPanel.transform.position);
             }
 
             match1 = false;
@@ -117,16 +127,31 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (state == 1)
+        {
+            LineControll.Instance.SetPos(1, m_MainPanel.IntersectionPos);
+        }
+        else if (state == 2)
+        {
+            LineControll.Instance.SetPos(2, m_SubPanel.IntersectionPos);
+        }
+    }
+
     public void HandleUnpinchAction(Vector3 fingerPosition)
     {
         if (m_SubPanel)
         {
-            m_SubPanel.Finish(false);
+            m_SubPanel.Finish(true);
             NumData.NextData();
             StartCoroutine(CoDelayRestart());
+            state = 3;
+            LineControll.Instance.SetPos(2, m_SubPanel.SelectPos());
         }
 
         endPinchTime = Time.time;
+        endPosition = fingerPosition;
     }
 
     BaseView CreatePanel(bool subview)
@@ -150,7 +175,7 @@ public class UIManager : MonoBehaviour
 
         if (subview)
         {
-            var pos = m_MainPanel.SelectImg.GetChild(0).position;
+            var pos = m_MainPanel.SelectPos();
             go.transform.position = pos;
         }
 
@@ -164,7 +189,7 @@ public class UIManager : MonoBehaviour
         go.SetActive(true);
         if (subview)
         {
-            var pos = m_MainPanel.SelectImg.Find("Text").position;
+            var pos = m_MainPanel.SelectPos();
             go.transform.position = pos;
         }
 
@@ -173,14 +198,12 @@ public class UIManager : MonoBehaviour
 
     public void Save()
     {
-        if (m_MainPanel == null)
+        if (!m_MainPanel ||!m_SubPanel)
         {
             Debug.Log("没有数据可保存");
             return;
         }
 
-        var firstId = m_MainPanel.SelectIndex;
-        var secondId = m_SubPanel.SelectIndex;
         var time = DateTime.Now.ToString("G");
         var filename = DateTime.Now.ToString("yyyyMMddHH") + ".txt";
 
@@ -197,6 +220,8 @@ public class UIManager : MonoBehaviour
         sb.AppendLine($"{NumData.CurrentNum[0]}-{NumData.CurrentNum[1]}");
         sb.AppendLine($"匹配成功：{match1}-{match2}");
         sb.AppendLine("duration:" + (endPinchTime - startPinchTime));
+        sb.AppendLine("startPos:" + startPosition);
+        sb.AppendLine("endPos:" + endPosition);
 
         if (FileUtility.SafeWriteAllText(path, sb.ToString()))
         {

@@ -6,8 +6,8 @@
     {
         new[] { "Display Control", "Home", "Volume Control", "Pause" },
         new[] { "Quick Chat", "Pings", "Screenshot Sharing", "Voice" },
-        new[] { "Speed", "Chat", "Inventory", "Health" },
-        new[] { "Progress", "Motion", "-", "Game" },
+        new[] { "Speed", "Motion", "Inventory", "Health" },
+        new[] { "Progress", "Map", "-", "Frame" },
     };
 
     static readonly string[][] array1 =

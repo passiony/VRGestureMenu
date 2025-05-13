@@ -46,7 +46,8 @@ public class RadianView : BaseView
         {
             Vector3 intersectionPoint = Hand.position + handToEyeDirection * enter;
             var direction = intersectionPoint - transform.position;
-            var distance = direction.magnitude;
+            var distance = Mathf.Max(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
+            IntersectionPos = intersectionPoint;
             if (distance < 0.5f)
             {
                 foreach (var radian in radianList)
@@ -55,6 +56,7 @@ public class RadianView : BaseView
                     radian.color = Color.white;
                     radian.transform.localScale = Vector3.one;
                 }
+
                 return;
             }
 
@@ -63,14 +65,14 @@ public class RadianView : BaseView
 
             // 计算交点到圆盘中心的方向与圆盘右方向（0度位置）之间的夹角
             float angle = Vector3.SignedAngle(transform.up, centerToIntersection, transform.forward);
+            angle += segmentAngle * 0.5f;
             if (angle < 0) angle += 360;
-
             // 计算每个弧形的角度范围
             for (int i = 0; i < Num; i++)
             {
-                float startAngle = (i) * segmentAngle;
+                float startAngle = (i ) * segmentAngle;
                 float endAngle = (i + 1) * segmentAngle;
-
+                
                 // 判断射线是否在当前弧形的角度范围内
                 if (angle >= startAngle && angle < endAngle)
                 {
@@ -94,9 +96,21 @@ public class RadianView : BaseView
     public override void Finish(bool fade)
     {
         base.Finish(fade);
+
         if (fade)
         {
-            GetComponent<CanvasGroup>().alpha = 0.2f;
+            var childs = GetComponentsInChildren<CanvasGroup>();
+            foreach (var child in childs)
+            {
+                child.alpha = 0f;
+            }
+
+            SelectImg.GetComponentInChildren<CanvasGroup>().alpha = 0.8f;
         }
+    }
+
+    public override Vector3 SelectPos()
+    {
+        return SelectImg.GetChild(0).position;
     }
 }
